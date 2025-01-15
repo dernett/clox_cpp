@@ -7,7 +7,8 @@
             "generator": "Ninja",
             "binaryDir": "build/${presetName}",
             "cacheVariables": {
-                "CMAKE_CXX_FLAGS": "$env{CXX_WARNINGS} $env{CXX_EXTRA_FLAGS}"
+                "CMAKE_CXX_FLAGS": "$env{CXX_WARNINGS} $env{CXX_EXTRA_FLAGS}",
+                "CMAKE_CXX_LINKER_FLAGS": "$env{CXX_EXTRA_LINKER_FLAGS}"
             },
             "environment": {
                 "CXX_WARNINGS": "-Werror -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Woverloaded-virtual -Wdouble-promotion"
@@ -31,7 +32,8 @@
                 "CMAKE_CXX_COMPILER": "clang++"
             },
             "environment": {
-                "CXX_EXTRA_FLAGS": "-stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+                "CXX_EXTRA_FLAGS": "-fsanitize=address,undefined,leak -fno-omit-frame-pointer -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG",
+                "CXX_EXTRA_LINKER_FLAGS": "-fsanitize=address,undefined,leak -fno-omit-frame-pointer"
             }
         }
     ]
