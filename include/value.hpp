@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <print>
 
+namespace clox {
 class Value {
 public:
   enum ValueType : uint8_t { VAL_NUMBER };
@@ -31,4 +32,5 @@ public:
   void print() override { std::print("{}", number); }
 };
 
+}; // namespace clox
 #endif

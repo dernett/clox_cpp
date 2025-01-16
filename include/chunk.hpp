@@ -8,6 +8,7 @@
 
 #include "value.hpp"
 
+namespace clox {
 enum OpCode : uint8_t {
   OP_CONSTANT,
   OP_RETURN,
@@ -71,5 +72,6 @@ public:
     }
   }
 };
+} // namespace clox
 
 #endif

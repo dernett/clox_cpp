@@ -53,12 +53,12 @@ static void runFile(const fs::path &path) {
 }
 
 int main(int argc, char *argv[]) {
-  Chunk chunk;
-  size_t constant = chunk.addConstant(std::make_unique<Number>(1.2));
-  chunk.write(OP_CONSTANT, 123);
+  clox::Chunk chunk;
+  size_t constant = chunk.addConstant(std::make_unique<clox::Number>(1.2));
+  chunk.write(clox::OP_CONSTANT, 123);
   chunk.write(constant, 123);
 
-  chunk.write(OP_RETURN, 123);
+  chunk.write(clox::OP_RETURN, 123);
 
   chunk.disassemble("test chunk");
 
