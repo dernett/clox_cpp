@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string>
 
+#include "chunk.hpp"
+#include "value.hpp"
 #include "vm.hpp"
 
 namespace fs = std::filesystem;
@@ -51,6 +53,15 @@ static void runFile(const fs::path &path) {
 }
 
 int main(int argc, char *argv[]) {
+  Chunk chunk;
+  size_t constant = chunk.addConstant(std::make_unique<Number>(1.2));
+  chunk.write(OP_CONSTANT, 123);
+  chunk.write(constant, 123);
+
+  chunk.write(OP_RETURN, 123);
+
+  chunk.disassemble("test chunk");
+
   if (argc == 1) {
     repl();
   } else if (argc == 2) {
