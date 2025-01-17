@@ -11,22 +11,29 @@
 namespace clox {
 enum OpCode : uint8_t {
   OP_CONSTANT,
+  OP_NEGATE,
   OP_RETURN,
 };
 
 class Chunk {
   std::vector<uint8_t> code;
   std::vector<int> lines;
-  std::vector<std::unique_ptr<Value>> constants;
+  std::vector<Value> constants;
 
 public:
+  [[nodiscard]] uint8_t getCode(size_t index) const { return code[index]; }
+
+  [[nodiscard]] Value getConstant(size_t index) const {
+    return constants[index];
+  }
+
   void write(uint8_t byte, int line) {
     code.push_back(byte);
     lines.push_back(line);
   }
 
-  size_t addConstant(std::unique_ptr<Value> value) {
-    constants.push_back(std::move(value));
+  size_t addConstant(Value value) {
+    constants.push_back(value);
     return constants.size() - 1;
   }
 
@@ -40,9 +47,7 @@ public:
 
   size_t constantInstruction(std::string_view name, size_t offset) const {
     uint8_t constant = code[offset + 1];
-    std::print("{:<16} {:4} '", name, constant);
-    constants[constant]->print();
-    std::println("'");
+    std::println("{:<16} {:4} '{}'", name, constant, constants[constant]);
     return offset + 2;
   }
 
@@ -64,6 +69,8 @@ public:
     switch (instruction) {
     case OP_CONSTANT:
       return constantInstruction("OP_CONSTANT", offset);
+    case OP_NEGATE:
+      return simpleInstruction("OP_NEGATE", offset);
     case OP_RETURN:
       return simpleInstruction("OP_RETURN", offset);
     default:
