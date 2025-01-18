@@ -1,2 +1,6 @@
 BasedOnStyle: LLVM
 AllowShortCaseLabelsOnASingleLine: false
+AlignArrayOfStructures: None
+AlignConsecutiveAssignments:
+  Enabled: false
+AlwaysBreakTemplateDeclarations: true

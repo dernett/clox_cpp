@@ -11,7 +11,7 @@
                 "CMAKE_CXX_LINKER_FLAGS": "$env{CXX_EXTRA_LINKER_FLAGS}"
             },
             "environment": {
-                "CXX_WARNINGS": "-Werror -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Woverloaded-virtual -Wdouble-promotion"
+                "CXX_WARNINGS": "-Werror -Wno-c99-designator -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Woverloaded-virtual -Wdouble-promotion"
             }
         },
         {

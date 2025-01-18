@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include "compiler.hpp"
 #include "chunk.hpp"
+#include "compiler.hpp"
 
 namespace clox {
 enum InterpretResult : uint8_t {
@@ -19,11 +19,18 @@ class VM {
   std::vector<Value> stack;
 
 public:
-  explicit VM(Chunk &&chunk) : chunk(std::move(chunk)) {}
-
   InterpretResult interpret(const char *source) {
-    compile(source);
-    return INTERPRET_OK;
+    Chunk compiledChunk;
+    Compiler compiler(source, compiledChunk);
+
+    if (!compiler.compile()) {
+      return INTERPRET_COMPILE_ERROR;
+    }
+
+    chunk = std::move(compiledChunk);
+    ip = 0;
+
+    return run();
   }
 
   void push(Value value) { stack.push_back(value); }
@@ -33,6 +40,13 @@ public:
     Value value = stack.back();
     stack.pop_back();
     return value;
+  }
+
+  template <class BinaryOp>
+  void binaryOp(BinaryOp op) {
+    double b = pop().asNumber();
+    double a = pop().asNumber();
+    push(Value::Number(op(a, b)));
   }
 
   InterpretResult run();

@@ -5,8 +5,6 @@
 #include <sstream>
 #include <string>
 
-#include "chunk.hpp"
-#include "value.hpp"
 #include "vm.hpp"
 
 namespace fs = std::filesystem;
@@ -33,10 +31,6 @@ class Driver {
   clox::VM vm;
 
 public:
-  explicit Driver(clox::Chunk &&chunk) : vm(std::move(chunk)) {
-    vm.run();
-  };
-
   void repl() {
     std::string line;
     for (;;) {
@@ -63,16 +57,7 @@ public:
 };
 
 int main(int argc, char *argv[]) {
-  clox::Chunk chunk;
-  size_t constant = chunk.addConstant(clox::Value::Number(1.2));
-  chunk.write(clox::OP_CONSTANT, 123);
-  chunk.write(constant, 123);
-  chunk.write(clox::OP_NEGATE, 123);
-  chunk.write(clox::OP_RETURN, 123);
-
-  chunk.disassemble("test chunk");
-
-  Driver driver(std::move(chunk));
+  Driver driver;
 
   if (argc == 1) {
     driver.repl();

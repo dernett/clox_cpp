@@ -57,7 +57,8 @@ private:
 };
 }; // namespace clox
 
-template <> struct std::formatter<clox::Value> {
+template <>
+struct std::formatter<clox::Value> {
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
   auto format(const clox::Value &value, std::format_context &ctx) const {

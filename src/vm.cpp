@@ -1,5 +1,5 @@
-#include "common.hpp"
 #include "vm.hpp"
+#include "common.hpp"
 
 namespace clox {
 InterpretResult VM::run() {
@@ -12,13 +12,23 @@ InterpretResult VM::run() {
     std::println();
     chunk.disassembleInstruction(ip);
 #endif
-    uint8_t instruction;
+    uint8_t instruction{};
     switch (instruction = readByte()) {
-    case OP_CONSTANT: {
-      Value constant = readConstant();
-      push(constant);
+    case OP_CONSTANT:
+      push(readConstant());
       break;
-    }
+    case OP_ADD:
+      binaryOp(std::plus());
+      break;
+    case OP_SUBTRACT:
+      binaryOp(std::minus());
+      break;
+    case OP_MULTIPLY:
+      binaryOp(std::multiplies());
+      break;
+    case OP_DIVIDE:
+      binaryOp(std::divides());
+      break;
     case OP_NEGATE:
       push(Value::Number(-pop().asNumber()));
       break;
