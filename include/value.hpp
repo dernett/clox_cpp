@@ -62,6 +62,19 @@ public:
 
   [[nodiscard]] ValueType getType() const { return type; }
 
+  friend bool operator==(const Value &a, const Value &b) {
+    if (a.getType() != b.getType())
+      return false;
+    switch (a.getType()) {
+    case VAL_BOOL:
+      return a.asBool() == b.asBool();
+    case VAL_NIL:
+      return true;
+    case VAL_NUMBER:
+      return a.asNumber() == b.asNumber();
+    }
+  }
+
 private:
   Value() = default;
 };

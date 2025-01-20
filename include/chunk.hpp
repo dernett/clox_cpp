@@ -14,6 +14,9 @@ enum OpCode : uint8_t {
   OP_NIL,
   OP_TRUE,
   OP_FALSE,
+  OP_EQUAL,
+  OP_GREATER,
+  OP_LESS,
   OP_ADD,
   OP_SUBTRACT,
   OP_MULTIPLY,
@@ -85,6 +88,12 @@ public:
       return simpleInstruction("OP_TRUE", offset);
     case OP_FALSE:
       return simpleInstruction("OP_FALSE", offset);
+    case OP_EQUAL:
+      return simpleInstruction("OP_EQUAL", offset);
+    case OP_GREATER:
+      return simpleInstruction("OP_GREATER", offset);
+    case OP_LESS:
+      return simpleInstruction("OP_LESS", offset);
     case OP_ADD:
       return simpleInstruction("OP_ADD", offset);
     case OP_SUBTRACT:

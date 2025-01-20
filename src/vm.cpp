@@ -15,8 +15,8 @@ InterpretResult VM::run() {
     chunk.disassembleInstruction(ip);
 #endif
     InterpretResult flag = INTERPRET_OK;
-    uint8_t instruction{};
-    switch (instruction = readByte()) {
+    auto instruction = static_cast<OpCode>(readByte());
+    switch (instruction) {
     case OP_CONSTANT:
       push(readConstant());
       break;
@@ -28,6 +28,18 @@ InterpretResult VM::run() {
       break;
     case OP_FALSE:
       push(Value::Bool(false));
+      break;
+    case OP_EQUAL: {
+      Value b = pop();
+      Value a = pop();
+      push(Value::Bool(a == b));
+      break;
+    }
+    case OP_GREATER:
+      flag = binaryOp(Value::Bool, std::greater());
+      break;
+    case OP_LESS:
+      flag = binaryOp(Value::Bool, std::less());
       break;
     case OP_ADD:
       flag = binaryOp(Value::Number, std::plus());
