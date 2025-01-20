@@ -11,6 +11,9 @@
 namespace clox {
 enum OpCode : uint8_t {
   OP_CONSTANT,
+  OP_NIL,
+  OP_TRUE,
+  OP_FALSE,
   OP_ADD,
   OP_SUBTRACT,
   OP_MULTIPLY,
@@ -26,6 +29,8 @@ class Chunk {
 
 public:
   [[nodiscard]] uint8_t getCode(size_t index) const { return code[index]; }
+
+  [[nodiscard]] int getLine(size_t index) const { return lines[index]; }
 
   [[nodiscard]] Value getConstant(size_t index) const {
     return constants[index];
@@ -73,6 +78,12 @@ public:
     switch (instruction) {
     case OP_CONSTANT:
       return constantInstruction("OP_CONSTANT", offset);
+    case OP_NIL:
+      return simpleInstruction("OP_NIL", offset);
+    case OP_TRUE:
+      return simpleInstruction("OP_TRUE", offset);
+    case OP_FALSE:
+      return simpleInstruction("OP_FALSE", offset);
     case OP_ADD:
       return simpleInstruction("OP_ADD", offset);
     case OP_SUBTRACT:

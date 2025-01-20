@@ -40,6 +40,12 @@ public:
     return v;
   }
 
+  [[nodiscard]] bool isBool() const { return getType() == VAL_BOOL; }
+
+  [[nodiscard]] bool isNil() const { return getType() == VAL_NIL; }
+
+  [[nodiscard]] bool isNumber() const { return getType() == VAL_NUMBER; }
+
   [[nodiscard]] bool asBool() const {
     assert(type == VAL_BOOL);
     return boolean;

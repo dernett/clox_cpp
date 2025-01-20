@@ -30,6 +30,22 @@ void Compiler::binary() {
   }
 }
 
+void Compiler::literal() {
+  switch (previous.type) {
+  case TOKEN_FALSE:
+    emitByte(OP_FALSE);
+    break;
+  case TOKEN_NIL:
+    emitByte(OP_NIL);
+    break;
+  case TOKEN_TRUE:
+    emitByte(OP_TRUE);
+    break;
+  default:
+    std::unreachable();
+  }
+}
+
 void Compiler::grouping() {
   expression();
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
