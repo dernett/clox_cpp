@@ -46,6 +46,10 @@ public:
 
   [[nodiscard]] bool isNumber() const { return getType() == VAL_NUMBER; }
 
+  [[nodiscard]] bool isFalsey() const {
+    return isNil() || (isBool() && !asBool());
+  }
+
   [[nodiscard]] bool asBool() const {
     assert(type == VAL_BOOL);
     return boolean;

@@ -147,7 +147,7 @@ private:
       [TOKEN_SEMICOLON]     = {nullptr,             nullptr,           PREC_NONE  },
       [TOKEN_SLASH]         = {nullptr,             &Compiler::binary, PREC_FACTOR},
       [TOKEN_STAR]          = {nullptr,             &Compiler::binary, PREC_FACTOR},
-      [TOKEN_BANG]          = {nullptr,             nullptr,           PREC_NONE  },
+      [TOKEN_BANG]          = {&Compiler::unary,    nullptr,           PREC_NONE  },
       [TOKEN_BANG_EQUAL]    = {nullptr,             nullptr,           PREC_NONE  },
       [TOKEN_EQUAL]         = {nullptr,             nullptr,           PREC_NONE  },
       [TOKEN_EQUAL_EQUAL]   = {nullptr,             nullptr,           PREC_NONE  },

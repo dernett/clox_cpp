@@ -48,6 +48,9 @@ InterpretResult VM::run() {
       }
       push(Value::Number(-pop().asNumber()));
       break;
+    case OP_NOT:
+      push(Value::Bool(pop().isFalsey()));
+      break;
     case OP_RETURN:
       std::println("{}", pop());
       return INTERPRET_OK;
