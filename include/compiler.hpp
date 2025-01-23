@@ -40,8 +40,11 @@ public:
 
   bool compile() {
     advance();
-    expression();
-    consume(TOKEN_EOF, "Expect end of expression.");
+
+    while (!match(TOKEN_EOF)) {
+      declaration();
+    }
+
     endCompiler();
     return !hadError;
   }
@@ -90,6 +93,17 @@ private:
     errorAtCurrent(message);
   }
 
+  [[nodiscard]] bool check(TokenType type) const {
+    return current.type == type;
+  }
+
+  bool match(TokenType type) {
+    if (!check(type))
+      return false;
+    advance();
+    return true;
+  }
+
   void emitByte(uint8_t byte) { chunk.write(byte, previous.line); }
 
   void emitBytes(uint8_t byte1, uint8_t byte2) {
@@ -116,6 +130,12 @@ private:
   void endCompiler() { emitReturn(); }
 
   void expression();
+
+  void printStatement();
+
+  void declaration();
+
+  void statement();
 
   void binary();
 

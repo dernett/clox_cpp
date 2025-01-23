@@ -23,6 +23,9 @@ InterpretResult VM::run() {
   for (;;) {
 #ifdef DEBUG_TRACE_EXECUTION
     std::print("          ");
+    if (stack.empty()) {
+      std::print("<empty>");
+    }
     for (Value value : stack) {
       std::print("[ {} ]", value);
     }
@@ -80,6 +83,9 @@ InterpretResult VM::run() {
     case OP_DIVIDE:
       flag = binaryOp(Value::Number, std::divides());
       break;
+    case OP_NOT:
+      push(Value::Bool(pop().isFalsey()));
+      break;
     case OP_NEGATE:
       if (!peek(0).isNumber()) {
         runtimeError("Operand must be a number.");
@@ -87,11 +93,11 @@ InterpretResult VM::run() {
       }
       push(Value::Number(-pop().asNumber()));
       break;
-    case OP_NOT:
-      push(Value::Bool(pop().isFalsey()));
+    case OP_PRINT:
+      std::println("{}", pop());
       break;
     case OP_RETURN:
-      std::println("{}", pop());
+      // Exit interpreter.
       return INTERPRET_OK;
     }
     if (flag != INTERPRET_OK)

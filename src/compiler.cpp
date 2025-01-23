@@ -7,6 +7,20 @@ namespace clox {
 
 void Compiler::expression() { parsePrecedence(PREC_ASSIGNMENT); }
 
+void Compiler::printStatement() {
+  expression();
+  consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+  emitByte(OP_PRINT);
+}
+
+void Compiler::declaration() { statement(); }
+
+void Compiler::statement() {
+  if (match(TOKEN_PRINT)) {
+    printStatement();
+  }
+}
+
 void Compiler::binary() {
   TokenType operatorType = previous.type;
   const ParseRule &rule = getRule(operatorType);
