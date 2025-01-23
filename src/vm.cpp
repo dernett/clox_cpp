@@ -1,9 +1,24 @@
 #include "vm.hpp"
 #include "common.hpp"
+#include "compiler.hpp"
 
 #include <functional>
 
 namespace clox {
+
+InterpretResult VM::interpret(const char *source) {
+  chunk = Chunk(allocator);
+  Compiler compiler(source, *this);
+
+  if (!compiler.compile()) {
+    return INTERPRET_COMPILE_ERROR;
+  }
+
+  ip = 0;
+
+  return run();
+}
+
 InterpretResult VM::run() {
   for (;;) {
 #ifdef DEBUG_TRACE_EXECUTION
@@ -41,9 +56,21 @@ InterpretResult VM::run() {
     case OP_LESS:
       flag = binaryOp(Value::Bool, std::less());
       break;
-    case OP_ADD:
-      flag = binaryOp(Value::Number, std::plus());
+    case OP_ADD: {
+      if (peek(0).isString() && peek(1).isString()) {
+        ObjString *b = pop().asString();
+        ObjString *a = pop().asString();
+        auto *result = allocateObject<ObjString>();
+        *result += *a;
+        *result += *b;
+        push(Value::Object(result));
+      } else if (peek(0).isNumber() && peek(1).isNumber()) {
+        double b = pop().asNumber();
+        double a = pop().asNumber();
+        push(Value::Number(a + b));
+      }
       break;
+    }
     case OP_SUBTRACT:
       flag = binaryOp(Value::Number, std::minus());
       break;

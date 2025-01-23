@@ -76,6 +76,11 @@ void Compiler::number() {
   emitConstant(Value::Number(value));
 }
 
+void Compiler::string() {
+  emitConstant(Value::Object(vm.allocateObject<ObjString>(
+      previous.str.substr(1, previous.str.size() - 2))));
+}
+
 void Compiler::unary() {
   TokenType operatorType = previous.type;
 

@@ -27,11 +27,19 @@ enum OpCode : uint8_t {
 };
 
 class Chunk {
-  std::vector<uint8_t> code;
-  std::vector<int> lines;
-  std::vector<Value> constants;
+  std::pmr::vector<uint8_t> code;
+  std::pmr::vector<int> lines;
+  std::pmr::vector<Value> constants;
 
 public:
+  using allocator_type = std::pmr::polymorphic_allocator<>;
+
+  Chunk() = default;
+  explicit Chunk(const allocator_type &allocator)
+      : code(allocator), lines(allocator), constants(allocator) {}
+
+  allocator_type get_allocator() const { return code.get_allocator(); }
+
   [[nodiscard]] uint8_t getCode(size_t index) const { return code[index]; }
 
   [[nodiscard]] int getLine(size_t index) const { return lines[index]; }

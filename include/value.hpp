@@ -4,19 +4,18 @@
 #include <cassert>
 #include <print>
 
+#include "object.hpp"
+
 namespace clox {
 
-enum ValueType : uint8_t {
-  VAL_BOOL,
-  VAL_NIL,
-  VAL_NUMBER,
-};
+enum ValueType : uint8_t { VAL_BOOL, VAL_NIL, VAL_NUMBER, VAL_OBJ };
 
 class Value {
   ValueType type;
   union {
     bool boolean;
     double number;
+    Obj *obj;
   };
 
 public:
@@ -40,24 +39,51 @@ public:
     return v;
   }
 
+  [[nodiscard]] static Value Object(Obj *obj) {
+    Value v{};
+    v.type = VAL_OBJ;
+    v.obj = obj;
+    return v;
+  }
+
   [[nodiscard]] bool isBool() const { return getType() == VAL_BOOL; }
 
   [[nodiscard]] bool isNil() const { return getType() == VAL_NIL; }
 
   [[nodiscard]] bool isNumber() const { return getType() == VAL_NUMBER; }
 
+  [[nodiscard]] bool isObj() const { return getType() == VAL_OBJ; }
+
+  [[nodiscard]] ObjType objType() const { return asObj()->getType(); }
+
+  [[nodiscard]] bool isObjType(ObjType objtype) const {
+    return isObj() && objType() == objtype;
+  }
+
+  [[nodiscard]] bool isString() const { return isObjType(OBJ_STRING); }
+
   [[nodiscard]] bool isFalsey() const {
     return isNil() || (isBool() && !asBool());
   }
 
   [[nodiscard]] bool asBool() const {
-    assert(type == VAL_BOOL);
+    assert(isBool());
     return boolean;
   }
 
   [[nodiscard]] double asNumber() const {
-    assert(type == VAL_NUMBER);
+    assert(isNumber());
     return number;
+  }
+
+  [[nodiscard]] Obj *asObj() const {
+    assert(isObj());
+    return obj;
+  }
+
+  [[nodiscard]] ObjString *asString() const {
+    assert(isString());
+    return static_cast<ObjString *>(asObj());
   }
 
   [[nodiscard]] ValueType getType() const { return type; }
@@ -72,6 +98,8 @@ public:
       return true;
     case VAL_NUMBER:
       return a.asNumber() == b.asNumber();
+    case VAL_OBJ:
+      return *a.asString() == *b.asString();
     }
   }
 
@@ -92,6 +120,8 @@ struct std::formatter<clox::Value> {
       return std::format_to(ctx.out(), "nil");
     case clox::VAL_NUMBER:
       return std::format_to(ctx.out(), "{}", value.asNumber());
+    case clox::VAL_OBJ:
+      return std::format_to(ctx.out(), "{}", value.asString()->getString());
     }
   }
 };

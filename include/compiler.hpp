@@ -3,6 +3,7 @@
 
 #include "chunk.hpp"
 #include "scanner.hpp"
+#include "vm.hpp"
 #include <iostream>
 
 namespace clox {
@@ -30,10 +31,12 @@ class Compiler {
   bool panicMode = false;
 
   Scanner scanner;
+  VM &vm;
   Chunk &chunk;
 
 public:
-  Compiler(const char *source, Chunk &chunk) : scanner(source), chunk(chunk) {}
+  Compiler(const char *source, VM &vm)
+      : scanner(source), vm(vm), chunk(vm.getChunk()) {}
 
   bool compile() {
     advance();
@@ -122,6 +125,8 @@ private:
 
   void number();
 
+  void string();
+
   void unary();
 
   void parsePrecedence(Precedence precedence);
@@ -156,7 +161,7 @@ private:
       [TOKEN_LESS]          = {nullptr,             &Compiler::binary, PREC_COMPARISON},
       [TOKEN_LESS_EQUAL]    = {nullptr,             &Compiler::binary, PREC_COMPARISON},
       [TOKEN_IDENTIFIER]    = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_STRING]        = {nullptr,             nullptr,           PREC_NONE      },
+      [TOKEN_STRING]        = {&Compiler::string,   nullptr,           PREC_NONE      },
       [TOKEN_NUMBER]        = {&Compiler::number,   nullptr,           PREC_NONE      },
       [TOKEN_AND]           = {nullptr,             nullptr,           PREC_NONE      },
       [TOKEN_CLASS]         = {nullptr,             nullptr,           PREC_NONE      },

@@ -2,9 +2,12 @@
 #define clox_vm_h
 
 #include <cstdint>
+#include <iostream>
+#include <memory_resource>
 
 #include "chunk.hpp"
-#include "compiler.hpp"
+#include "memory.hpp"
+#include "object.hpp"
 #include "value.hpp"
 
 namespace clox {
@@ -15,24 +18,36 @@ enum InterpretResult : uint8_t {
 };
 
 class VM {
+  GCResource resource;
+  std::pmr::polymorphic_allocator<> allocator;
+
   Chunk chunk;
   size_t ip = 0;
   std::vector<Value> stack;
+  std::vector<Obj *> objects;
 
 public:
-  InterpretResult interpret(const char *source) {
-    Chunk compiledChunk;
-    Compiler compiler(source, compiledChunk);
+  explicit VM()
+      : resource(GCResource(*this)), allocator(&resource), chunk(allocator) {}
 
-    if (!compiler.compile()) {
-      return INTERPRET_COMPILE_ERROR;
+  VM(const VM &) = delete;
+  VM &operator=(const VM &) = delete;
+  VM(VM &&) = default;
+  VM &operator=(VM &&) = delete;
+
+  ~VM() {
+    for (Obj *obj : objects) {
+      switch (obj->getType()) {
+      case OBJ_STRING:
+        allocator.delete_object(static_cast<ObjString *>(obj));
+        break;
+      }
     }
-
-    chunk = std::move(compiledChunk);
-    ip = 0;
-
-    return run();
   }
+
+  InterpretResult interpret(const char *source);
+
+  Chunk &getChunk() { return chunk; }
 
   void push(Value value) { stack.push_back(value); }
 
@@ -61,6 +76,13 @@ public:
   }
 
   InterpretResult run();
+
+  template <typename ObjType, typename... Args>
+  ObjType *allocateObject(Args... args) {
+    ObjType *obj = allocator.new_object<ObjType>(args...);
+    objects.push_back(obj);
+    return obj;
+  }
 
 private:
   uint8_t readByte() { return chunk.getCode(ip++); }
