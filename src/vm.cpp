@@ -47,6 +47,33 @@ InterpretResult VM::run() {
     case OP_FALSE:
       push(Value::Bool(false));
       break;
+    case OP_POP:
+      pop();
+      break;
+    case OP_GET_GLOBAL: {
+      ObjString *name = readString();
+      if (auto it = globals.find(name); it != globals.end()) {
+        push(it->second);
+        break;
+      }
+      runtimeError("Undefined variable '{}'.", name->getString());
+      return INTERPRET_RUNTIME_ERROR;
+    }
+    case OP_DEFINE_GLOBAL: {
+      ObjString *name = readString();
+      globals.insert_or_assign(name, peek(0));
+      pop();
+      break;
+    }
+    case OP_SET_GLOBAL: {
+      ObjString *name = readString();
+      if (!globals.contains(name)) {
+        runtimeError("Undefined variable '{}'.", name->getString());
+        return INTERPRET_RUNTIME_ERROR;
+      }
+      globals.insert_or_assign(name, peek(0));
+      break;
+    }
     case OP_EQUAL: {
       Value b = pop();
       Value a = pop();
@@ -63,9 +90,7 @@ InterpretResult VM::run() {
       if (peek(0).isString() && peek(1).isString()) {
         ObjString *b = pop().asString();
         ObjString *a = pop().asString();
-        auto *result = allocateObject<ObjString>();
-        *result += *a;
-        *result += *b;
+        ObjString *result = takeString(a->getString() + b->getString());
         push(Value::Object(result));
       } else if (peek(0).isNumber() && peek(1).isNumber()) {
         double b = pop().asNumber();

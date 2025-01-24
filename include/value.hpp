@@ -99,7 +99,8 @@ public:
     case VAL_NUMBER:
       return a.asNumber() == b.asNumber();
     case VAL_OBJ:
-      return *a.asString() == *b.asString();
+      // strings are interned
+      return a.asObj() == b.asObj();
     }
   }
 

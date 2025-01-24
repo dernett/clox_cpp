@@ -131,27 +131,43 @@ private:
 
   void expression();
 
+  void varDeclaration();
+
+  void expressionStatement();
+
   void printStatement();
+
+  void synchronize();
 
   void declaration();
 
   void statement();
 
-  void binary();
+  void binary(bool canAssign);
 
-  void literal();
+  void literal(bool canAssign);
 
-  void grouping();
+  void grouping(bool canAssign);
 
-  void number();
+  void number(bool canAssign);
 
-  void string();
+  void string(bool canAssign);
 
-  void unary();
+  void namedVariable(Token name, bool canAssign);
+
+  void variable(bool canAssign);
+
+  void unary(bool canAssign);
 
   void parsePrecedence(Precedence precedence);
 
-  using ParseFn = void (Compiler::*)();
+  uint8_t identifierConstant(Token &name);
+
+  uint8_t parseVariable(std::string_view errorMessage);
+
+  void defineVariable(uint8_t global);
+
+  using ParseFn = void (Compiler::*)(bool canAssign);
 
   struct ParseRule {
     ParseFn prefix;
@@ -180,7 +196,7 @@ private:
       [TOKEN_GREATER_EQUAL] = {nullptr,             &Compiler::binary, PREC_COMPARISON},
       [TOKEN_LESS]          = {nullptr,             &Compiler::binary, PREC_COMPARISON},
       [TOKEN_LESS_EQUAL]    = {nullptr,             &Compiler::binary, PREC_COMPARISON},
-      [TOKEN_IDENTIFIER]    = {nullptr,             nullptr,           PREC_NONE      },
+      [TOKEN_IDENTIFIER]    = {&Compiler::variable, nullptr,           PREC_NONE      },
       [TOKEN_STRING]        = {&Compiler::string,   nullptr,           PREC_NONE      },
       [TOKEN_NUMBER]        = {&Compiler::number,   nullptr,           PREC_NONE      },
       [TOKEN_AND]           = {nullptr,             nullptr,           PREC_NONE      },

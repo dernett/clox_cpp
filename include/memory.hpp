@@ -23,7 +23,7 @@ class GCResource final : public std::pmr::memory_resource {
 
   bool
   do_is_equal(const std::pmr::memory_resource &other) const noexcept override {
-    return std::pmr::new_delete_resource()->is_equal(other);
+    return this == &other;
   }
 
 public:

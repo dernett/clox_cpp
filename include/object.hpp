@@ -40,15 +40,6 @@ public:
   allocator_type get_allocator() const { return str.get_allocator(); }
 
   const std::pmr::string &getString() const { return str; }
-
-  ObjString &operator+=(const ObjString &other) {
-    str += other.getString();
-    return *this;
-  }
-
-  bool operator==(const ObjString &other) const {
-    return getString() == other.getString();
-  }
 };
 } // namespace clox
 
