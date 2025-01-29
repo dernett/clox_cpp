@@ -8,7 +8,7 @@ namespace clox {
 
 InterpretResult VM::interpret(const char *source) {
   chunk = Chunk(allocator);
-  Compiler compiler(source, *this);
+  Parser compiler(source, *this);
 
   if (!compiler.compile()) {
     return INTERPRET_COMPILE_ERROR;
@@ -50,6 +50,16 @@ InterpretResult VM::run() {
     case OP_POP:
       pop();
       break;
+    case OP_GET_LOCAL: {
+      uint8_t slot = readByte();
+      push(stack[slot]);
+      break;
+    }
+    case OP_SET_LOCAL: {
+      uint8_t slot = readByte();
+      stack[slot] = peek(0);
+      break;
+    }
     case OP_GET_GLOBAL: {
       ObjString *name = readString();
       if (auto it = globals.find(name); it != globals.end()) {

@@ -31,7 +31,8 @@ class VM {
 
 public:
   explicit VM()
-      : resource(GCResource(*this)), allocator(&resource), chunk(allocator) {}
+      : resource(GCResource(*this)), allocator(&resource), chunk(allocator),
+        strings(allocator), globals(allocator) {}
 
   VM(const VM &) = delete;
   VM &operator=(const VM &) = delete;

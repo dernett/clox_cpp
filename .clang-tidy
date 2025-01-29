@@ -20,6 +20,7 @@ Checks: >
   -google-readability-braces-around-statements,
   -google-readability-todo,
   -google-runtime-references,
+  -misc-no-recursion,
   -misc-use-anonymous-namespace,
   -modernize-avoid-c-arrays,
   -modernize-concat-nested-namespaces,

@@ -15,6 +15,8 @@ enum OpCode : uint8_t {
   OP_TRUE,
   OP_FALSE,
   OP_POP,
+  OP_GET_LOCAL,
+  OP_SET_LOCAL,
   OP_GET_GLOBAL,
   OP_DEFINE_GLOBAL,
   OP_SET_GLOBAL,
@@ -82,6 +84,12 @@ public:
     return offset + 1;
   }
 
+  size_t byteInstruction(std::string_view name, size_t offset) const {
+    uint8_t slot = code[offset + 1];
+    std::println("{:<16} {:4}", name, slot);
+    return offset + 2;
+  }
+
   size_t disassembleInstruction(size_t offset) const {
     std::print("{:04} ", offset);
 
@@ -103,6 +111,10 @@ public:
       return simpleInstruction("OP_FALSE", offset);
     case OP_POP:
       return simpleInstruction("OP_POP", offset);
+    case OP_GET_LOCAL:
+      return byteInstruction("OP_GET_LOCAL", offset);
+    case OP_SET_LOCAL:
+      return byteInstruction("OP_SET_LOCAL", offset);
     case OP_GET_GLOBAL:
       return constantInstruction("OP_GET_GLOBAL", offset);
     case OP_DEFINE_GLOBAL:
