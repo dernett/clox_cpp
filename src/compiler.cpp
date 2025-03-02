@@ -5,9 +5,9 @@
 
 namespace clox {
 
-void Parser::expression() { parsePrecedence(PREC_ASSIGNMENT); }
+void Emitter::expression() { parsePrecedence(PREC_ASSIGNMENT); }
 
-void Parser::block() {
+void Emitter::block() {
   while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
     declaration();
   }
@@ -15,7 +15,7 @@ void Parser::block() {
   consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 }
 
-void Parser::varDeclaration() {
+void Emitter::varDeclaration() {
   uint8_t global = parseVariable("Expect variable name.");
 
   if (match(TOKEN_EQUAL)) {
@@ -28,25 +28,25 @@ void Parser::varDeclaration() {
   defineVariable(global);
 }
 
-void Parser::expressionStatement() {
+void Emitter::expressionStatement() {
   expression();
   consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
   emitByte(OP_POP);
 }
 
-void Parser::printStatement() {
+void Emitter::printStatement() {
   expression();
   consume(TOKEN_SEMICOLON, "Expect ';' after value.");
   emitByte(OP_PRINT);
 }
 
-void Parser::synchronize() {
-  panicMode = false;
+void Emitter::synchronize() {
+  parser.panicMode = false;
 
-  while (current.type != TOKEN_EOF) {
-    if (previous.type == TOKEN_SEMICOLON)
+  while (parser.current.type != TOKEN_EOF) {
+    if (parser.previous.type == TOKEN_SEMICOLON)
       return;
-    switch (current.type) {
+    switch (parser.current.type) {
     case TOKEN_CLASS:
     case TOKEN_FUN:
     case TOKEN_VAR:
@@ -65,18 +65,18 @@ void Parser::synchronize() {
   }
 }
 
-void Parser::declaration() {
+void Emitter::declaration() {
   if (match(TOKEN_VAR)) {
     varDeclaration();
   } else {
     statement();
   }
 
-  if (panicMode)
+  if (parser.panicMode)
     synchronize();
 }
 
-void Parser::statement() {
+void Emitter::statement() {
   if (match(TOKEN_PRINT)) {
     printStatement();
   } else if (match(TOKEN_LEFT_BRACE)) {
@@ -88,8 +88,8 @@ void Parser::statement() {
   }
 }
 
-void Parser::binary(bool /*canAssign*/) {
-  TokenType operatorType = previous.type;
+void Emitter::binary(bool /*canAssign*/) {
+  TokenType operatorType = parser.previous.type;
   const ParseRule &rule = getRule(operatorType);
   parsePrecedence(static_cast<Precedence>(rule.precedence + 1));
 
@@ -129,8 +129,8 @@ void Parser::binary(bool /*canAssign*/) {
   }
 }
 
-void Parser::literal(bool /*canAssign*/) {
-  switch (previous.type) {
+void Emitter::literal(bool /*canAssign*/) {
+  switch (parser.previous.type) {
   case TOKEN_FALSE:
     emitByte(OP_FALSE);
     break;
@@ -145,24 +145,24 @@ void Parser::literal(bool /*canAssign*/) {
   }
 }
 
-void Parser::grouping(bool /*canAssign*/) {
+void Emitter::grouping(bool /*canAssign*/) {
   expression();
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
-void Parser::number(bool /*canAssign*/) {
+void Emitter::number(bool /*canAssign*/) {
   // Would like to use `std::from_chars`, but it requires at least libc++ 20
   // This is okay since we know the source string is null-terminated
-  double value = std::strtod(previous.str.data(), nullptr); // NOLINT
+  double value = std::strtod(parser.previous.str.data(), nullptr); // NOLINT
   emitConstant(Value::Number(value));
 }
 
-void Parser::string(bool /*canAssign*/) {
-  emitConstant(Value::Object(
-      vm.copyString(previous.str.substr(1, previous.str.size() - 2))));
+void Emitter::string(bool /*canAssign*/) {
+  emitConstant(Value::Object(vm.copyString(
+      parser.previous.str.substr(1, parser.previous.str.size() - 2))));
 }
 
-void Parser::namedVariable(Token name, bool canAssign) {
+void Emitter::namedVariable(Token name, bool canAssign) {
   uint8_t getOp = 0;
   uint8_t setOp = 0;
   int arg = resolveLocal(name);
@@ -183,10 +183,12 @@ void Parser::namedVariable(Token name, bool canAssign) {
   }
 }
 
-void Parser::variable(bool canAssign) { namedVariable(previous, canAssign); }
+void Emitter::variable(bool canAssign) {
+  namedVariable(parser.previous, canAssign);
+}
 
-void Parser::unary(bool /*canAssign*/) {
-  TokenType operatorType = previous.type;
+void Emitter::unary(bool /*canAssign*/) {
+  TokenType operatorType = parser.previous.type;
 
   // Compile the operand
   parsePrecedence(PREC_UNARY);
@@ -204,9 +206,9 @@ void Parser::unary(bool /*canAssign*/) {
   }
 }
 
-void Parser::parsePrecedence(Precedence precedence) {
+void Emitter::parsePrecedence(Precedence precedence) {
   advance();
-  ParseFn prefixRule = getRule(previous.type).prefix;
+  ParseFn prefixRule = getRule(parser.previous.type).prefix;
   if (prefixRule == nullptr) {
     error("Expect expression.");
     return;
@@ -215,9 +217,9 @@ void Parser::parsePrecedence(Precedence precedence) {
   bool canAssign = precedence <= PREC_ASSIGNMENT;
   (this->*prefixRule)(canAssign);
 
-  while (precedence <= getRule(current.type).precedence) {
+  while (precedence <= getRule(parser.current.type).precedence) {
     advance();
-    ParseFn infixRule = getRule(previous.type).infix;
+    ParseFn infixRule = getRule(parser.previous.type).infix;
     (this->*infixRule)(canAssign);
   }
 
@@ -226,13 +228,13 @@ void Parser::parsePrecedence(Precedence precedence) {
   }
 }
 
-uint8_t Parser::identifierConstant(Token &name) {
+uint8_t Emitter::identifierConstant(Token &name) {
   return makeConstant(Value::Object(vm.copyString(name.str)));
 }
 
 static bool identifiersEqual(Token &a, Token &b) { return a.str == b.str; }
 
-int Parser::resolveLocal(Token &name) {
+int Emitter::resolveLocal(Token &name) {
   for (int i = compiler.localCount - 1; i >= 0; i--) {
     Local &local = compiler.locals[i];
     if (identifiersEqual(name, local.name)) {
@@ -246,7 +248,7 @@ int Parser::resolveLocal(Token &name) {
   return -1;
 }
 
-void Parser::addLocal(Token name) {
+void Emitter::addLocal(Token name) {
   if (compiler.localCount == UINT8_COUNT) {
     error("Too many local variables in function.");
     return;
@@ -257,11 +259,11 @@ void Parser::addLocal(Token name) {
   local.depth = -1;
 }
 
-void Parser::declareVariable() {
+void Emitter::declareVariable() {
   if (compiler.scopeDepth == 0)
     return;
 
-  Token &name = previous;
+  Token &name = parser.previous;
   for (int i = compiler.localCount - 1; i >= 0; i--) {
     Local &local = compiler.locals[i];
     if (local.depth != -1 && local.depth < compiler.scopeDepth) {
@@ -276,21 +278,21 @@ void Parser::declareVariable() {
   addLocal(name);
 }
 
-uint8_t Parser::parseVariable(std::string_view errorMessage) {
+uint8_t Emitter::parseVariable(std::string_view errorMessage) {
   consume(TOKEN_IDENTIFIER, errorMessage);
 
   declareVariable();
   if (compiler.scopeDepth > 0)
     return 0;
 
-  return identifierConstant(previous);
+  return identifierConstant(parser.previous);
 }
 
-void Parser::markInitialized() {
+void Emitter::markInitialized() {
   compiler.locals[compiler.localCount - 1].depth = compiler.scopeDepth;
 }
 
-void Parser::defineVariable(uint8_t global) {
+void Emitter::defineVariable(uint8_t global) {
   if (compiler.scopeDepth > 0) {
     markInitialized();
     return;

@@ -8,9 +8,9 @@ namespace clox {
 
 InterpretResult VM::interpret(const char *source) {
   chunk = Chunk(allocator);
-  Parser compiler(source, *this);
+  Emitter emitter(source, *this);
 
-  if (!compiler.compile()) {
+  if (!emitter.compile()) {
     return INTERPRET_COMPILE_ERROR;
   }
 

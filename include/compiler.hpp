@@ -23,6 +23,13 @@ enum Precedence : uint8_t {
   PREC_PRIMARY
 };
 
+struct Parser {
+  Token current;
+  Token previous;
+  bool hadError = false;
+  bool panicMode = false;
+};
+
 struct Local {
   Token name;
   int depth = 0;
@@ -34,20 +41,15 @@ struct Compiler {
   int scopeDepth = 0;
 };
 
-class Parser {
-  Token current;
-  Token previous;
-  bool hadError = false;
-  bool panicMode = false;
-
+class Emitter {
+  Parser parser;
   Compiler compiler;
-
   Scanner scanner;
   VM &vm;
   Chunk &chunk;
 
 public:
-  Parser(const char *source, VM &vm)
+  Emitter(const char *source, VM &vm)
       : scanner(source), vm(vm), chunk(vm.getChunk()) {}
 
   bool compile() {
@@ -58,14 +60,14 @@ public:
     }
 
     endCompiler();
-    return !hadError;
+    return !parser.hadError;
   }
 
 private:
   void errorAt(const Token &token, std::string_view message) {
-    if (panicMode)
+    if (parser.panicMode)
       return;
-    panicMode = true;
+    parser.panicMode = true;
     std::print(std::cerr, "[line {}] Error", token.line);
 
     if (token.type == TOKEN_EOF) {
@@ -77,27 +79,29 @@ private:
     }
 
     std::println(std::cerr, ": {}", message);
-    hadError = true;
+    parser.hadError = true;
   }
 
-  void errorAtCurrent(std::string_view message) { errorAt(current, message); }
+  void errorAtCurrent(std::string_view message) {
+    errorAt(parser.current, message);
+  }
 
-  void error(std::string_view message) { errorAt(previous, message); }
+  void error(std::string_view message) { errorAt(parser.previous, message); }
 
   void advance() {
-    previous = current;
+    parser.previous = parser.current;
 
     for (;;) {
-      current = scanner.scanToken();
-      if (current.type != TOKEN_ERROR)
+      parser.current = scanner.scanToken();
+      if (parser.current.type != TOKEN_ERROR)
         break;
 
-      errorAtCurrent(current.str);
+      errorAtCurrent(parser.current.str);
     }
   }
 
   void consume(TokenType type, std::string_view message) {
-    if (current.type == type) {
+    if (parser.current.type == type) {
       advance();
       return;
     }
@@ -106,7 +110,7 @@ private:
   }
 
   [[nodiscard]] bool check(TokenType type) const {
-    return current.type == type;
+    return parser.current.type == type;
   }
 
   bool match(TokenType type) {
@@ -116,7 +120,7 @@ private:
     return true;
   }
 
-  void emitByte(uint8_t byte) { chunk.write(byte, previous.line); }
+  void emitByte(uint8_t byte) { chunk.write(byte, parser.previous.line); }
 
   void emitBytes(uint8_t byte1, uint8_t byte2) {
     emitByte(byte1);
@@ -202,7 +206,7 @@ private:
 
   void defineVariable(uint8_t global);
 
-  using ParseFn = void (Parser::*)(bool canAssign);
+  using ParseFn = void (Emitter::*)(bool canAssign);
 
   struct ParseRule {
     ParseFn prefix;
@@ -212,46 +216,46 @@ private:
 
   // clang-format off
   static constexpr ParseRule rules[] = {
-      [TOKEN_LEFT_PAREN]    = {&Parser::grouping, nullptr,           PREC_NONE      },
-      [TOKEN_RIGHT_PAREN]   = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_LEFT_BRACE]    = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_RIGHT_BRACE]   = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_COMMA]         = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_DOT]           = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_MINUS]         = {&Parser::unary,    &Parser::binary, PREC_TERM      },
-      [TOKEN_PLUS]          = {nullptr,             &Parser::binary, PREC_TERM      },
-      [TOKEN_SEMICOLON]     = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_SLASH]         = {nullptr,             &Parser::binary, PREC_FACTOR    },
-      [TOKEN_STAR]          = {nullptr,             &Parser::binary, PREC_FACTOR    },
-      [TOKEN_BANG]          = {&Parser::unary,    nullptr,           PREC_NONE      },
-      [TOKEN_BANG_EQUAL]    = {nullptr,             &Parser::binary, PREC_EQUALITY  },
-      [TOKEN_EQUAL]         = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_EQUAL_EQUAL]   = {nullptr,             &Parser::binary, PREC_EQUALITY  },
-      [TOKEN_GREATER]       = {nullptr,             &Parser::binary, PREC_COMPARISON},
-      [TOKEN_GREATER_EQUAL] = {nullptr,             &Parser::binary, PREC_COMPARISON},
-      [TOKEN_LESS]          = {nullptr,             &Parser::binary, PREC_COMPARISON},
-      [TOKEN_LESS_EQUAL]    = {nullptr,             &Parser::binary, PREC_COMPARISON},
-      [TOKEN_IDENTIFIER]    = {&Parser::variable, nullptr,           PREC_NONE      },
-      [TOKEN_STRING]        = {&Parser::string,   nullptr,           PREC_NONE      },
-      [TOKEN_NUMBER]        = {&Parser::number,   nullptr,           PREC_NONE      },
-      [TOKEN_AND]           = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_CLASS]         = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_ELSE]          = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_FALSE]         = {&Parser::literal,  nullptr,           PREC_NONE      },
-      [TOKEN_FOR]           = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_FUN]           = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_IF]            = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_NIL]           = {&Parser::literal,  nullptr,           PREC_NONE      },
-      [TOKEN_OR]            = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_PRINT]         = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_RETURN]        = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_SUPER]         = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_THIS]          = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_TRUE]          = {&Parser::literal,  nullptr,           PREC_NONE      },
-      [TOKEN_VAR]           = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_WHILE]         = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_ERROR]         = {nullptr,             nullptr,           PREC_NONE      },
-      [TOKEN_EOF]           = {nullptr,             nullptr,           PREC_NONE      },
+      [TOKEN_LEFT_PAREN]    = {&Emitter::grouping, nullptr,          PREC_NONE       },
+      [TOKEN_RIGHT_PAREN]   = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_LEFT_BRACE]    = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_RIGHT_BRACE]   = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_COMMA]         = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_DOT]           = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_MINUS]         = {&Emitter::unary,    &Emitter::binary, PREC_TERM       },
+      [TOKEN_PLUS]          = {nullptr,            &Emitter::binary, PREC_TERM       },
+      [TOKEN_SEMICOLON]     = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_SLASH]         = {nullptr,            &Emitter::binary, PREC_FACTOR     },
+      [TOKEN_STAR]          = {nullptr,            &Emitter::binary, PREC_FACTOR     },
+      [TOKEN_BANG]          = {&Emitter::unary,    nullptr,          PREC_NONE       },
+      [TOKEN_BANG_EQUAL]    = {nullptr,            &Emitter::binary, PREC_EQUALITY   },
+      [TOKEN_EQUAL]         = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_EQUAL_EQUAL]   = {nullptr,            &Emitter::binary, PREC_EQUALITY   },
+      [TOKEN_GREATER]       = {nullptr,            &Emitter::binary, PREC_COMPARISON },
+      [TOKEN_GREATER_EQUAL] = {nullptr,            &Emitter::binary, PREC_COMPARISON },
+      [TOKEN_LESS]          = {nullptr,            &Emitter::binary, PREC_COMPARISON },
+      [TOKEN_LESS_EQUAL]    = {nullptr,            &Emitter::binary, PREC_COMPARISON },
+      [TOKEN_IDENTIFIER]    = {&Emitter::variable, nullptr,          PREC_NONE       },
+      [TOKEN_STRING]        = {&Emitter::string,   nullptr,          PREC_NONE       },
+      [TOKEN_NUMBER]        = {&Emitter::number,   nullptr,          PREC_NONE       },
+      [TOKEN_AND]           = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_CLASS]         = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_ELSE]          = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_FALSE]         = {&Emitter::literal,  nullptr,          PREC_NONE       },
+      [TOKEN_FOR]           = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_FUN]           = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_IF]            = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_NIL]           = {&Emitter::literal,  nullptr,          PREC_NONE       },
+      [TOKEN_OR]            = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_PRINT]         = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_RETURN]        = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_SUPER]         = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_THIS]          = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_TRUE]          = {&Emitter::literal,  nullptr,          PREC_NONE       },
+      [TOKEN_VAR]           = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_WHILE]         = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_ERROR]         = {nullptr,            nullptr,          PREC_NONE       },
+      [TOKEN_EOF]           = {nullptr,            nullptr,          PREC_NONE       },
   };
   // clang-format on
 
